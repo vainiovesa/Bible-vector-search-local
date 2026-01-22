@@ -1,18 +1,9 @@
-import json
-import numpy as np
-import ollama
 from pgvector.psycopg import register_vector
+import numpy as np
 import psycopg
+import ollama
 
-
-BIBLE_PATH = "en_kjv_bible.json"
 BIBLE_DB_NAME = "bible_db"
-
-
-def load():
-    with open(BIBLE_PATH, "r") as file:
-        Bible = json.loads(file.read())
-    return Bible
 
 
 def get_connection():
@@ -29,8 +20,12 @@ def get_connection():
     return conn
 
 
-def save(conn:psycopg.Connection, data:list):
-    conn.execute("DROP TABLE IF EXISTS Bible")
+def reinitialize():
+    conn = get_connection()
+
+    sql = "DROP TABLE IF EXISTS Bible"
+    conn.execute(sql)
+
     sql = """CREATE TABLE Bible (
         book        TEXT,
         chapter     INTEGER,
@@ -41,9 +36,9 @@ def save(conn:psycopg.Connection, data:list):
         )"""
     conn.execute(sql)
 
-    inputs = ["search_document: " + row[3] for row in data]
-    embeddings = ollama.embed(model="nomic-embed-text", input=inputs).embeddings
 
+def save_data(data:list, embeddings:list):
+    conn = get_connection()
     cur = conn.cursor()
     with cur.copy("COPY Bible (book, chapter, verse, content, embedding) FROM STDIN WITH (FORMAT BINARY)") as copy:
         copy.set_types(["text", "integer", "integer", "text", "vector"])
@@ -59,6 +54,19 @@ def save(conn:psycopg.Connection, data:list):
             copy.write_row([*row, embedding])
 
 
-def view(conn:psycopg.Connection):
+def view_all():
+    conn = get_connection()
     result = conn.execute("SELECT * FROM Bible").fetchall()
+    return result
+
+
+def search(query:str, limit:int=5):
+    conn = get_connection()
+    input = "search_query: " + query
+    embedding = ollama.embed(model='nomic-embed-text', input=input).embeddings[0]
+
+    sql = "SELECT book, chapter + 1, verse + 1, content FROM Bible ORDER BY embedding <=> %s LIMIT %s"
+    params = [np.array(embedding), limit]
+
+    result = conn.execute(sql, params).fetchall()
     return result
