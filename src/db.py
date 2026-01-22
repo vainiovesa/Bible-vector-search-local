@@ -59,7 +59,17 @@ def view():
 def fetch(embedding, limit):
     conn = get_connection()
 
-    sql = "SELECT book, chapter + 1, verse + 1, content FROM Bible ORDER BY embedding <=> %s LIMIT %s"
+    sql = """
+        SELECT
+            book,
+            chapter + 1,
+            verse + 1,
+            content,
+            embedding <=> %s AS distance
+        FROM Bible
+        ORDER BY distance
+        LIMIT %s
+    """
     params = [embedding, limit]
 
     result = conn.execute(sql, params).fetchall()
