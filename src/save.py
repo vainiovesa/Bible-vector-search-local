@@ -1,8 +1,6 @@
 import json
-import numpy as np
 import ollama
-import psycopg
-from db import get_connection, reinitialize, save_data, search
+from db import reinitialize, save_data
 
 
 BIBLE_PATH = "en_kjv_bible.json"

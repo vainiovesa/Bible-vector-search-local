@@ -1,7 +1,6 @@
 from pgvector.psycopg import register_vector
-import numpy as np
 import psycopg
-import ollama
+
 
 BIBLE_DB_NAME = "bible_db"
 
@@ -60,13 +59,11 @@ def view_all():
     return result
 
 
-def search(query:str, limit:int=5):
+def fetch(embedding, limit):
     conn = get_connection()
-    input = "search_query: " + query
-    embedding = ollama.embed(model='nomic-embed-text', input=input).embeddings[0]
 
     sql = "SELECT book, chapter + 1, verse + 1, content FROM Bible ORDER BY embedding <=> %s LIMIT %s"
-    params = [np.array(embedding), limit]
+    params = [embedding, limit]
 
     result = conn.execute(sql, params).fetchall()
     return result
