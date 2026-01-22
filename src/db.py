@@ -14,7 +14,9 @@ def get_connection():
         password="postgres",
         autocommit=True,
     )
-    conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+
+    sql = "CREATE EXTENSION IF NOT EXISTS vector"
+    conn.execute(sql)
     register_vector(conn)
     return conn
 
@@ -42,20 +44,15 @@ def save_data(data:list, embeddings:list):
     with cur.copy("COPY Bible (book, chapter, verse, content, embedding) FROM STDIN WITH (FORMAT BINARY)") as copy:
         copy.set_types(["text", "integer", "integer", "text", "vector"])
 
-        book_name = data[0][0]
-        print(book_name)
-
         for row, embedding in zip(data, embeddings):
-
-            if row[0] != book_name:
-                print(book_name)
-
             copy.write_row([*row, embedding])
 
 
-def view_all():
+def view():
     conn = get_connection()
-    result = conn.execute("SELECT * FROM Bible").fetchall()
+
+    sql = "SELECT book, chapter + 1, verse + 1, content FROM Bible"
+    result = conn.execute(sql).fetchall()
     return result
 
 

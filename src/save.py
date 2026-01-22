@@ -20,3 +20,22 @@ def save(data:list, reinit:bool=False):
     embeddings = ollama.embed(model="nomic-embed-text", input=inputs).embeddings
 
     save_data(data, embeddings)
+
+
+def embed_all_verses():
+    Bible = load()
+
+    for book in Bible:
+        data = []
+
+        book_name = book["name"]
+        for chapter_num, chapter in enumerate(book["chapters"]):
+            for verse_num, verse in enumerate(chapter):
+                data.append((book_name, chapter_num, verse_num, verse))
+        print(f"Started saving {book_name}")
+
+        try:
+            save(data)
+            print(f"Saved {book_name}")
+        except:
+            print(f"Saving {book_name} failed")
